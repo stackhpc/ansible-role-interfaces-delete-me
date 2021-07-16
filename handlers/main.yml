@@ -54,6 +54,15 @@
     line: 8021q
   when: not modules_load_stat.stat.exists
 
+- name: RedHat | ensure network service is started and enabled
+  become: true
+  service:
+    name: network
+    enabled: true
+    state: started
+  listen: Bounce network devices
+  when: ansible_facts.os_family == 'RedHat'
+
 # We need to bounce the changed network interfaces carefully, as some
 # interfaces may depend on others. To further complicate matters, the
 # dependencies are different between RedHat and Debian systems. Here are the

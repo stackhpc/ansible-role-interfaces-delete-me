@@ -20,3 +20,16 @@
 - include: 'ethernet_configuration.yml'
   when: interfaces_ether_interfaces is defined
   tags: configuration
+
+- name: Ensure interfaces are configured
+  meta: flush_handlers
+
+- name: RedHat | ensure network service is started and enabled
+  # NOTE: This handles the case where there are no configuration
+  # changes.
+  become: true
+  service:
+    name: network
+    enabled: true
+    state: started
+  when: ansible_facts.os_family == 'RedHat'
