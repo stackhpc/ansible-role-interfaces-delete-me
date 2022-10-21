@@ -12,12 +12,27 @@
   vars:
     bridge_check: "{{ item | bridge_check }}"
 
+- name: Create the nmconnection file for bridge devices
+  become: true
+  template:
+    src: "bridge_nmconnection.j2"
+    dest: "/etc/NetworkManager/system-connections/{{ item.device }}.nmconnection"
+    mode: "0600"
+  with_items: '{{ interfaces_bridge_interfaces }}'
+  when:
+    - interfaces_use_nmconnection
+  register: bridge_result
+  notify:
+    - Bounce network devices
+
 - name: Create the network configuration file for bridge devices
   become: true
   template:
     src: 'bridge_{{ ansible_facts.os_family }}.j2'
     dest: '{{ interfaces_net_path[ansible_facts.os_family|lower] }}/ifcfg-{{ item.device }}'
   with_items: '{{ interfaces_bridge_interfaces }}'
+  when:
+    - not interfaces_use_nmconnection
   register: bridge_result
   notify:
     - Bounce network devices
@@ -31,6 +46,7 @@
   when:
     - item.route is defined
     - ansible_facts.os_family == 'RedHat'
+    - not interfaces_use_nmconnection
   register: bridge_route_add_result
   notify:
     - Bounce network devices
@@ -42,7 +58,7 @@
     state: absent
   with_items: '{{ interfaces_bridge_interfaces }}'
   when:
-    - item.route is not defined
+    - item.route is not defined or interfaces_use_nmconnection
     - ansible_facts.os_family == 'RedHat'
   register: bridge_route_del_result
   notify:
@@ -57,6 +73,7 @@
   when:
     - item.rules is defined
     - ansible_facts.os_family == 'RedHat'
+    - not interfaces_use_nmconnection
   register: bridge_rule_add_result
   notify:
     - Bounce network devices
@@ -68,9 +85,27 @@
     state: absent
   with_items: '{{ interfaces_bridge_interfaces }}'
   when:
-    - item.rules is not defined
+    - item.rules is not defined or interfaces_use_nmconnection
     - ansible_facts.os_family == 'RedHat'
   register: bridge_rule_del_result
+  notify:
+    - Bounce network devices
+
+- name: Create the nmconnection file for port on the bridge devices
+  become: true
+  template:
+    src: "bridge_port_nmconnection.j2"
+    dest: "/etc/NetworkManager/system-connections/{{ item.1 }}.nmconnection"
+    mode: "0600"
+  with_subelements:
+    - "{{ interfaces_bridge_interfaces }}"
+    - ports
+  # Don't configure bridge ports that are bonds here - they will have been
+  # configured by the bond tasks.
+  when:
+    - item.1 not in interfaces_bond_interfaces | map(attribute='device') | list
+    - interfaces_use_nmconnection
+  register: bridge_port_result
   notify:
     - Bounce network devices
 
@@ -86,6 +121,7 @@
   # configured by the bond tasks.
   when:
     - item.1 not in interfaces_bond_interfaces | map(attribute='device') | list
+    - not interfaces_use_nmconnection
   register: bridge_port_result
   notify:
     - Bounce network devices

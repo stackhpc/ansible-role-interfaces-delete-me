@@ -12,12 +12,27 @@
   vars:
     ether_check: "{{ item | ether_check }}"
 
+- name: Create the nmconnection file for ethernet devices
+  become: true
+  template:
+    src: "ethernet_nmconnection.j2"
+    dest: "/etc/NetworkManager/system-connections/{{ item.device }}.nmconnection"
+    mode: "0600"
+  with_items: '{{ interfaces_ether_interfaces }}'
+  when:
+    - interfaces_use_nmconnection
+  register: ether_result
+  notify:
+    - Bounce network devices
+
 - name: Create the network configuration file for ethernet devices
   become: true
   template:
     src: 'ethernet_{{ ansible_facts.os_family }}.j2'
     dest: '{{ interfaces_net_path[ansible_facts.os_family|lower] }}/ifcfg-{{ item.device }}'
   with_items: '{{ interfaces_ether_interfaces }}'
+  when:
+    - not interfaces_use_nmconnection
   register: ether_result
   notify:
     - Bounce network devices
@@ -31,6 +46,7 @@
   when:
     - item.route is defined
     - ansible_facts.os_family == 'RedHat'
+    - not interfaces_use_nmconnection
   register: ether_route_add_result
   notify:
     - Bounce network devices
@@ -45,6 +61,7 @@
     - item.ip6 is defined
     - item.ip6.route is defined
     - ansible_facts.os_family == 'RedHat'
+    - not interfaces_use_nmconnection
   register: ether_route6_add_result
   notify:
     - Bounce network devices
@@ -56,7 +73,7 @@
     state: absent
   with_items: '{{ interfaces_ether_interfaces }}'
   when:
-    - item.route is not defined
+    - item.route is not defined or interfaces_use_nmconnection
     - ansible_facts.os_family == 'RedHat'
   register: ether_route_del_result
   notify:
@@ -69,7 +86,7 @@
     state: absent
   with_items: '{{ interfaces_ether_interfaces }}'
   when:
-    - item.ip6 is not defined
+    - item.ip6 is not defined or interfaces_use_nmconnection
     - ansible_facts.os_family == 'RedHat'
   register: ether_route6_del_result
   notify:
@@ -84,6 +101,7 @@
   when:
     - item.rules is defined
     - ansible_facts.os_family == 'RedHat'
+    - not interfaces_use_nmconnection
   register: ether_rule_add_result
   notify:
     - Bounce network devices
@@ -95,7 +113,7 @@
     state: absent
   with_items: '{{ interfaces_ether_interfaces }}'
   when:
-    - item.rules is not defined
+    - item.rules is not defined or interfaces_use_nmconnection
     - ansible_facts.os_family == 'RedHat'
   register: ether_rule_del_result
   notify:
