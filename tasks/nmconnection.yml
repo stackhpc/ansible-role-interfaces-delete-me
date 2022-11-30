@@ -1,0 +1,61 @@
+---
+- name: Create the nmconnection file for bond devices
+  become: true
+  template:
+    src: "bond_nmconnection.j2"
+    dest: "/etc/NetworkManager/system-connections/{{ item.device }}.nmconnection"
+    mode: "0600"
+  with_items: '{{ interfaces_bond_interfaces }}'
+  notify:
+    - Make sure the bonding module is loaded
+    - Bounce networkmanager devices
+
+- name: Create the nmconnection file for slave in the bond devices
+  become: true
+  template:
+    src: "bond_slave_nmconnection.j2"
+    dest: "/etc/NetworkManager/system-connections/{{ item.1 }}.nmconnection"
+    mode: "0600"
+  with_subelements:
+    - "{{ interfaces_bond_interfaces }}"
+    - bond_slaves
+  when:
+    - interfaces_bond_setup_slaves
+  notify:
+    - Bounce networkmanager devices
+
+- name: Create the nmconnection file for bridge devices
+  become: true
+  template:
+    src: "bridge_nmconnection.j2"
+    dest: "/etc/NetworkManager/system-connections/{{ item.device }}.nmconnection"
+    mode: "0600"
+  with_items: '{{ interfaces_bridge_interfaces }}'
+  notify:
+    - Bounce networkmanager devices
+
+- name: Create the nmconnection file for port on the bridge devices
+  become: true
+  template:
+    src: "bridge_port_nmconnection.j2"
+    dest: "/etc/NetworkManager/system-connections/{{ item.1 }}.nmconnection"
+    mode: "0600"
+  with_subelements:
+    - "{{ interfaces_bridge_interfaces }}"
+    - ports
+  # Don't configure bridge ports that are bonds here - they will have been
+  # configured by the bond tasks.
+  when:
+    - item.1 not in interfaces_bond_interfaces | map(attribute='device') | list
+  notify:
+    - Bounce networkmanager devices
+
+- name: Create the nmconnection file for ethernet devices
+  become: true
+  template:
+    src: "ethernet_nmconnection.j2"
+    dest: "/etc/NetworkManager/system-connections/{{ item.device }}.nmconnection"
+    mode: "0600"
+  with_items: '{{ interfaces_ether_interfaces }}'
+  notify:
+    - Bounce networkmanager devices

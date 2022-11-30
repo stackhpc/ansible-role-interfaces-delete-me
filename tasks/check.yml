@@ -1,0 +1,39 @@
+---
+- name: Check active bond interface state
+  debug:
+    msg: >
+      Checking bond interface configuration for {{ item.device }}:
+      {{ bond_check }}
+  with_items: "{{ interfaces_bond_interfaces }}"
+  changed_when: bond_check.diff
+  register: bond_check_result
+  notify:
+    - Bounce network{% if interfaces_use_nmconnection | bool %}manager{% endif %} devices
+  vars:
+    bond_check: "{{ item | bond_check }}"
+
+- name: Check active bridge interface state
+  debug:
+    msg: >
+      Checking bridge interface configuration for {{ item.device }}:
+      {{ bridge_check }}
+  with_items: "{{ interfaces_bridge_interfaces }}"
+  changed_when: bridge_check.diff
+  register: bridge_check_result
+  notify:
+    - Bounce network{% if interfaces_use_nmconnection | bool %}manager{% endif %} devices
+  vars:
+    bridge_check: "{{ item | bridge_check }}"
+
+- name: Check active Ethernet interface state
+  debug:
+    msg: >
+      Checking Ethernet interface configuration for {{ item.device }}:
+      {{ ether_check }}
+  with_items: "{{ interfaces_ether_interfaces }}"
+  changed_when: ether_check.diff
+  register: ether_check_result
+  notify:
+    - Bounce network{% if interfaces_use_nmconnection | bool %}manager{% endif %} devices
+  vars:
+    ether_check: "{{ item | ether_check }}"

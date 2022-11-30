@@ -1,39 +1,10 @@
 ---
-- name: Check active bond interface state
-  debug:
-    msg: >
-      Checking bond interface configuration for {{ item.device }}:
-      {{ bond_check }}
-  with_items: "{{ interfaces_bond_interfaces }}"
-  changed_when: bond_check.diff
-  register: bond_check_result
-  notify:
-    - Bounce network devices
-  vars:
-    bond_check: "{{ item | bond_check }}"
-
-- name: Create the nmconnection file for bond devices
-  become: true
-  template:
-    src: "bond_nmconnection.j2"
-    dest: "/etc/NetworkManager/system-connections/{{ item.device }}.nmconnection"
-    mode: "0600"
-  with_items: '{{ interfaces_bond_interfaces }}'
-  when:
-    - interfaces_use_nmconnection
-  register: bond_result
-  notify:
-    - Make sure the bonding module is loaded
-    - Bounce network devices
-
 - name: Create the network configuration file for bond devices
   become: true
   template:
     src: 'bond_{{ ansible_facts.os_family }}.j2'
     dest: '{{ interfaces_net_path[ansible_facts.os_family|lower] }}/ifcfg-{{ item.device }}'
   with_items: '{{ interfaces_bond_interfaces }}'
-  when:
-    - not interfaces_use_nmconnection
   register: bond_result
   notify:
     - Check whether /etc/modules-load.d exists
@@ -51,7 +22,6 @@
   when:
     - item.route is defined
     - ansible_facts.os_family == 'RedHat'
-    - not interfaces_use_nmconnection
   register: bond_route_add_result
   notify:
     - Bounce network devices
@@ -63,7 +33,7 @@
     state: absent
   with_items: '{{ interfaces_bond_interfaces }}'
   when:
-    - item.route is not defined or interfaces_use_nmconnection
+    - item.route is not defined
     - ansible_facts.os_family == 'RedHat'
   register: bond_route_del_result
   notify:
@@ -78,7 +48,6 @@
   when:
     - item.rules is defined
     - ansible_facts.os_family == 'RedHat'
-    - not interfaces_use_nmconnection
   register: bond_rule_add_result
   notify:
     - Bounce network devices
@@ -90,25 +59,9 @@
     state: absent
   with_items: '{{ interfaces_bond_interfaces }}'
   when:
-    - item.rules is not defined or interfaces_use_nmconnection
+    - item.rules is not defined
     - ansible_facts.os_family == 'RedHat'
   register: bond_rule_del_result
-  notify:
-    - Bounce network devices
-
-- name: Create the nmconnection file for slave in the bond devices
-  become: true
-  template:
-    src: "bond_slave_nmconnection.j2"
-    dest: "/etc/NetworkManager/system-connections/{{ item.1 }}.nmconnection"
-    mode: "0600"
-  with_subelements:
-    - "{{ interfaces_bond_interfaces }}"
-    - bond_slaves
-  when:
-    - interfaces_bond_setup_slaves
-    - interfaces_use_nmconnection
-  register: bond_slave_result
   notify:
     - Bounce network devices
 
@@ -122,7 +75,6 @@
     - bond_slaves
   when:
     - interfaces_bond_setup_slaves
-    - not interfaces_use_nmconnection
   register: bond_slave_result
   notify:
     - Bounce network devices
