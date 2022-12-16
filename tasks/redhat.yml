@@ -14,16 +14,30 @@
 # will fail. Remove these files if the interface does not exist or is not being
 # configured.
 
-- name: RedHat | remove invalid interface configuration
+- name: RedHat | remove invalid interface configuration (network-scripts)
   become: true
   file:
     path: "/etc/sysconfig/network-scripts/ifcfg-{{ item }}"
     state: absent
   when:
+    - not interfaces_use_networkmanager
     - item not in ansible_facts.interfaces
     - item not in interfaces_ether_interfaces | map(attribute='device') | list
     - item not in interfaces_bridge_interfaces | map(attribute='device') | list
     - item not in interfaces_bridge_interfaces | map(attribute='ports') | flatten | list
     - item not in interfaces_bond_interfaces | map(attribute='device') | list
     - item not in interfaces_bond_interfaces | map(attribute='bond_slaves') | flatten | list
+  with_items: "{{ interfaces_workaround_centos_remove }}"
+
+# When using NetworkManager, existing ifcfg files need to be removed, otherwise
+# they shadow our nmconnection files. We do this only for interfaces that we
+# manage in this role.
+- name: RedHat | remove existing interface configuration (NetworkManager)
+  become: true
+  file:
+    path: "/etc/sysconfig/network-scripts/ifcfg-{{ item }}"
+    state: absent
+  when:
+    - interfaces_use_networkmanager
+    - item in interfaces_ether_interfaces | map(attribute='device') | list or item in interfaces_bridge_interfaces | map(attribute='device') | list or item in interfaces_bridge_interfaces | map(attribute='ports') | flatten | list or item in interfaces_bond_interfaces | map(attribute='device') | list or item in interfaces_bond_interfaces | map(attribute='bond_slaves') | flatten | list
   with_items: "{{ interfaces_workaround_centos_remove }}"
