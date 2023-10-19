@@ -16,8 +16,11 @@ slave-type=bridge
 {% endfor %}
 
 {% if item.mtu is defined %}
+{% if item.mtu_inherit is defined and item.mtu_inherit | bool %}
+{% else %}
 [ethernet]
 mtu={{ item.mtu }}
+{% endif %}
 {% endif %}
 
 {% if item.device is match(vlan_interface_regex) %}
