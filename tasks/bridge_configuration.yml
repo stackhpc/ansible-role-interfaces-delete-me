@@ -138,6 +138,6 @@
   set_fact:
     bridge_port_interfaces_changed: >
       {{ bridge_port_result.results |
-         select_changed_bridge_ports(bridge_interfaces_changed) |
+         select_changed_bridge_ports(bridge_interfaces_changed, interfaces_bond_interfaces) |
          unique |
          list }}

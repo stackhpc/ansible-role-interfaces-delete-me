@@ -240,7 +240,7 @@ def bond_check(context, interface):
 
     return result
 
-def select_changed_bridge_ports(port_results, bridges):
+def select_changed_bridge_ports(port_results, bridges, bonds=[]):
     """Selects bridge ports that need to be bounced
 
     This is not a general purpose filter and is specific to the
@@ -259,6 +259,11 @@ def select_changed_bridge_ports(port_results, bridges):
             result.append(port)
         elif pr["changed"]:
             result.append(port)
+        for bond in bonds:
+            if bond["device"] == port:
+                for slave in bond["bond_slaves"]:
+                    result.append(slave)
+                break
     return result
 
 class FilterModule(object):
