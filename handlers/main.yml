@@ -118,51 +118,9 @@
   command: >
     nohup bash -c "
     nmcli connection reload;
-
-    returncode=0
-    {% for interface in all_interfaces_changed | reverse %}
-    nmcli connection down {{ interface }};
-    {% endfor %}
-
-    {% for interface in all_interfaces_changed %}
-    if ! nmcli connection up {{ interface }}; then
-      echo \"Failed to bring up interface {{ interface }}\";
-      {% if interfaces_bounce_ignore_errors | bool %}
-      returncode=1
-      {% endif %}
-    fi;
-    {% endfor %}
-
-    echo 'Waiting for interfaces to become active and have a connected carrier';
-    for i in {1..20}; do
-      all_connected=true
-      {% for interface in all_interfaces_changed %}
-      if [[ '{{ interface }}' == *dummy* ]]; then
-        allowed_states='UNKNOWN|UP'
-      elif [[ '{{ interface }}' == 'lo' ]]; then
-        allowed_states='UNKNOWN'
-      else
-        allowed_states='UP'
-      fi
-
-      if ! (nmcli -t -f DEVICE,STATE device status | grep -q -w '{{ interface }}:connected' && ip link show '{{ interface }}' | grep -q -E 'state ('$allowed_states')'); then
-        all_connected=false
-        if [ $i -eq 20 ]; then
-          echo 'Interface {{ interface }} failed to become active and have a connected carrier';
-          {% if interfaces_bounce_ignore_errors | bool %}
-          returncode=1
-          {% endif %}
-        fi
-      fi;
-      {% endfor %}
-
-      if $all_connected; then
-        break;
-      fi
-      sleep 2;
-    done
-
-    exit $returncode"
+    nmcli networking off;
+    nmcli networking on;
+    "
   vars:
     ether_vlan_interfaces_changed: >
       {{ ether_interfaces_changed | select('match', vlan_interface_regex) | list}}
