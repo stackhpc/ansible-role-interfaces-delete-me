@@ -196,7 +196,8 @@
     nmcli connection up {{ interface }}
     {% endfor %}
     "
-  all_interfaces: "{{ interfaces_ether_interfaces + interfaces_bridge_interfaces + interfaces_bond_interfaces }}"
+  vars:
+    all_interfaces: "{{ interfaces_ether_interfaces + interfaces_bridge_interfaces + interfaces_bond_interfaces }}"
   when: interfaces_use_networkmanager
 
 # The order handlers execute are based on the order they're arranged here.
