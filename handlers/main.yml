@@ -187,6 +187,18 @@
     - Check active bond interface state
     - Check active bridge interface state
 
+- name: Ensure all interfaces are started
+  listen: Bounce networkmanager devices
+  become: true
+  command: >
+    nohup bash -c "
+    {% for interface in all_interfaces | map(attribute='device') | list %}
+    nmcli connection up {{ interface }}
+    {% endfor %}
+    "
+  all_interfaces: "{{ interfaces_ether_interfaces + interfaces_bridge_interfaces + interfaces_bond_interfaces }}"
+  when: interfaces_use_networkmanager
+
 # The order handlers execute are based on the order they're arranged here.
 # We want to do a controlled bounce of interfaces before we do any restart.
 - name: Restart NetworkManager
