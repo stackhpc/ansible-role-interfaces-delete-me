@@ -188,7 +188,7 @@
     - Check active bridge interface state
 
 - name: Ensure all interfaces are started
-  listen: Bounce networkmanager devices
+  listen: Bounce network devices
   become: true
   command: >
     nohup bash -c "
