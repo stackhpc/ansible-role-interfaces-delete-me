@@ -240,31 +240,6 @@ def bond_check(context, interface):
 
     return result
 
-def select_changed_bridge_ports(port_results, bridges, bonds=[]):
-    """Selects bridge ports that need to be bounced
-
-    This is not a general purpose filter and is specific to the
-    code in bridge_configuration.yml
-
-    :param port_results: The Ansible result objects obtained from templating
-        the network interface configuration files
-    :param bridges: A list of bridges that have been changed.
-    :returns: port_results with filtering applied
-    """
-    result = []
-    for pr in port_results:
-        bridge = pr["item"][0]["device"]
-        port = pr["item"][1]
-        if bridge in bridges:
-            result.append(port)
-        elif pr["changed"]:
-            result.append(port)
-        for bond in bonds:
-            if bond["device"] == port:
-                for slave in bond["bond_slaves"]:
-                    result.append(slave)
-                break
-    return result
 
 class FilterModule(object):
     """Interface comparison filters."""
@@ -274,5 +249,4 @@ class FilterModule(object):
             'ether_check': ether_check,
             'bridge_check': bridge_check,
             'bond_check': bond_check,
-            'select_changed_bridge_ports': select_changed_bridge_ports
         }

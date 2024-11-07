@@ -115,8 +115,9 @@
                    list) |
         list }}
 
-# bridge_interfaces_changed is used in the 'Bounce network devices' handler.
-- name: Set facts containing changed bridge devices
+# bridge_interfaces_changed and bridge_port_interfaces_changed are used in the
+# 'Bounce network devices' handler.
+- name: Set facts containing changed bridge and bridge port devices
   set_fact:
     # Select those tasks which changed, and map to a list of the corresponding
     # bridge devices.
@@ -132,12 +133,11 @@
           bridge_interfaces_with_all_ports_changed) |
          unique |
          list }}
-
-# bridge_port_interfaces_changed is used in the 'Bounce network devices' handler.
-- name: Set facts containing changed bridge port devices
-  set_fact:
+    # Select those tasks which changed, and map to a list of the corresponding
+    # bridge port devices.
     bridge_port_interfaces_changed: >
       {{ bridge_port_result.results |
-         select_changed_bridge_ports(bridge_interfaces_changed, interfaces_bond_interfaces) |
+         select('changed') |
+         map(attribute='item.1') |
          unique |
          list }}

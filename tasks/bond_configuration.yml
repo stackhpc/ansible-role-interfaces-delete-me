@@ -117,9 +117,9 @@
                    list) |
         list }}
 
-# bond_master_interfaces_changed are used in the 'Bounce network devices'
-# handler.
-- name: Set facts containing changed bond master
+# bond_master_interfaces_changed and bond_slave_interfaces_changed are used in
+# the 'Bounce network devices' handler.
+- name: Set facts containing changed bond master and slave devices
   set_fact:
     # Select those tasks which changed, and map to a list of the corresponding
     # bond master devices.
@@ -135,15 +135,11 @@
           bond_master_interfaces_with_all_slaves_changed) |
          unique |
          list }}
-
-# bond_slave_interfaces_changed are used in the 'Bounce network devices'
-# handler.
-- name: Set facts containing changed bond master
-  set_fact:
     # Select those tasks which changed, and map to a list of the corresponding
     # bond slave devices.
     bond_slave_interfaces_changed: >
       {{ bond_slave_result.results |
-         select_changed_bridge_ports(bond_master_interfaces_changed) |
+         select('changed') |
+         map(attribute='item.1') |
          unique |
          list }}
