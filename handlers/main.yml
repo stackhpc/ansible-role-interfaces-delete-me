@@ -193,7 +193,7 @@
   command: >
     nohup bash -c "
     {% for interface in all_interfaces | map(attribute='device') | list %}
-    nmcli connection up {{ interface }}
+    nmcli connection up {{ interface }};
     {% endfor %}
     "
   vars:
